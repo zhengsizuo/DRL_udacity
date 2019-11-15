@@ -7,10 +7,10 @@
 
 Result of training for 30 hours using GTX TITAN.
 
-![best](breakout_play.gif)
+![best](breakout_play.gif) <br/>
 
+30 thousand iterations
 <p align="center">
   <img src="dqn_30000.png">
-  <i>30 thousand iterations</i>
 </p>
 
