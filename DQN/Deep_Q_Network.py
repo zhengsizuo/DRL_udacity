@@ -10,17 +10,17 @@ import time
 
 
 env = gym.make('Breakout-v0')
-# env.seed(0)
 state_size = env.observation_space.shape
 action_size = env.action_space.n
 print('Original state shape: ', state_size)
 print('Number of actions: ', env.action_space.n)
 
-agent = Agent((32, 4, 84, 84), action_size, seed=1)
-TRAIN = False
+agent = Agent((32, 4, 84, 84), action_size, seed=1)  # state size (batch_size, 4 frames, img_height, img_width)
+TRAIN = False  # train or test flag
 
 
 def pre_process(observation):
+    """Process (210, 160, 3) picture into (1, 84, 84)"""
     x_t = cv2.cvtColor(cv2.resize(observation, (84, 84)), cv2.COLOR_BGR2GRAY)
     ret, x_t = cv2.threshold(x_t, 1, 255, cv2.THRESH_BINARY)
     return x_t
@@ -32,11 +32,10 @@ def init_state(processed_obs):
 
 def dqn(n_episodes=30000, max_t=40000, eps_start=1.0, eps_end=0.01, eps_decay=0.9995):
     """Deep Q-Learning.
-
     Params
     ======
         n_episodes (int): maximum number of training episodes
-        max_t (int): maximum number of timesteps per episode
+        max_t (int): maximum number of timesteps per episode, maximum frames
         eps_start (float): starting value of epsilon, for epsilon-greedy action selection
         eps_end (float): minimum value of epsilon
         eps_decay (float): multiplicative factor (per episode) for decreasing epsilon
@@ -53,7 +52,7 @@ def dqn(n_episodes=30000, max_t=40000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         for t in range(max_t):
             action = agent.act(state, eps)
             next_state, reward, done, _ = env.step(action)
-
+            # last three frames and current frame as the next state
             next_state = np.stack((state[1], state[2], state[3], pre_process(next_state)), axis=0)
             agent.step(state, action, reward, next_state, done)
             state = next_state
@@ -72,10 +71,10 @@ def dqn(n_episodes=30000, max_t=40000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         if np.mean(scores_window) >= 50.0:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode - 100,
                                                                                          np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'dqn_checkpoint_solved.pth')
+            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint/dqn_checkpoint_solved.pth')
             break
 
-    torch.save(agent.qnetwork_local.state_dict(), 'dqn_checkpoint_8.pth')
+    torch.save(agent.qnetwork_local.state_dict(), 'checkpoint/dqn_checkpoint_8.pth')
     return scores
 
 
@@ -96,14 +95,14 @@ if __name__ == '__main__':
 
     else:
         # load the weights from file
-        agent.qnetwork_local.load_state_dict(torch.load('dqn_checkpoint_8.pth'))
+        agent.qnetwork_local.load_state_dict(torch.load('checkpoint/dqn_checkpoint_8.pth'))
         rewards = []
-        for i in range(10):  # episodes
+        for i in range(10):  # episodes, play ten times
             total_reward = 0
             obs = env.reset()
             obs = pre_process(obs)
             state = init_state(obs)
-            for j in range(10000):  # frames
+            for j in range(10000):  # frames, in case stuck in one frame
                 action = agent.act(state)
                 env.render()
                 next_state, reward, done, _ = env.step(action)
@@ -116,5 +115,5 @@ if __name__ == '__main__':
                     break
 
         print("Test rewards are:", *rewards)
-        print("Average rewards:", np.mean(rewards))
+        print("Average reward:", np.mean(rewards))
         env.close()
