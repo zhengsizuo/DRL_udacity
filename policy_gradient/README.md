@@ -9,15 +9,13 @@
 
 ## Results
 ### rewards figure
-<figure class="third">
-    <img src="results/cartpole_rewards.png">
-    <img src="results/cartpole_baseline.png">
-    <img src="results/cartpole_entropy.png">
-</figure>
-<!--
-![Alt text](results/cartpole_rewards.png "Vanilla PG")
-![Alt text](results/cartpole_baseline.png "Baseline")
-![Alt text](results/cartpole_entropy.png "Vanilla PG") -->
+<table>
+    <tr>
+        <td ><center><img src="results/cartpole_rewards" width="200">Fig.1  Vanilla PG rewards </center></td>
+        <td ><center><img src="results/cartpole_baseline.png"  width="200">Fig.2 PG with baseline</center></td>
+        <td ><center><img src="results/cartpole_entropy.png"  width="200">Fig.3 PG with entropy</center></td>
+    </tr>
+</table>
 
 ### intelligent agent
 Test rewards of intelligent agent in ten episodes:
