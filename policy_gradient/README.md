@@ -11,9 +11,9 @@
 ### rewards figure
 <table>
     <tr>
-        <td ><center><img src="results/cartpole_rewards" width="200">Fig.1  Vanilla PG rewards </center></td>
-        <td ><center><img src="results/cartpole_baseline.png"  width="200">Fig.2 PG with baseline</center></td>
-        <td ><center><img src="results/cartpole_entropy.png"  width="200">Fig.3 PG with entropy</center></td>
+        <td ><center><img src="results/cartpole_rewards" width="300" title="Fig.1 Vanilla PG rewards">Fig.1 Vanilla PG rewards</center></td>
+        <td ><center><img src="results/cartpole_baseline.png"  width="300">Fig.2 PG with baseline</center></td>
+        <td ><center><img src="results/cartpole_entropy.png"  width="300">Fig.3 PG with entropy</center></td>
     </tr>
 </table>
 
