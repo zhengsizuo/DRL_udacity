@@ -11,7 +11,7 @@
 ### rewards figure
 <table>
     <tr>
-        <td ><center><img src="results/cartpole_rewards" width="300" title="Fig.1 Vanilla PG rewards">Fig.1 Vanilla PG rewards</center></td>
+        <td ><center><img src="results/cartpole_rewards" width="300">Fig.1 Vanilla PG rewards</center></td>
         <td ><center><img src="results/cartpole_baseline.png"  width="300">Fig.2 PG with baseline</center></td>
         <td ><center><img src="results/cartpole_entropy.png"  width="300">Fig.3 PG with entropy</center></td>
     </tr>
@@ -21,6 +21,6 @@
 Test rewards of intelligent agent in ten episodes:
 > Test rewards are: 200.0 200.0 200.0 200.0 200.0 200.0 200.0 200.0 200.0 200.0  
 
-![best](result/cartpole.gif)
+![best](result/cartpole.gif) <br />
 
 
