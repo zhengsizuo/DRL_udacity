@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tensorboardX import SummaryWriter
-from RL.policy_gradient.pg_agent import Policy, choose_act
+from policy_gradient.pg_agent import Policy, choose_act
 
 ENV_NAME = 'CartPole-v0'
 LEARNING_RATE = 0.01
