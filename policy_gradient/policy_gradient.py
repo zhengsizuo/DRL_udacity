@@ -74,10 +74,10 @@ def Vannilla_PG(n_episodes, max_step, gamma):
             writer.add_scalar("reward_100", recent_reward, i_episode)
         if recent_reward >= 195.0:
             print('Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, recent_reward))
+            torch.save(policy.state_dict(), 'model/pg_checkpoint.pth')
             break
 
     writer.close()
-    torch.save(policy.state_dict(), 'model/pg_checkpoint.pth')
     return total_rewards
 
 

@@ -6,24 +6,26 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 
 from collections import namedtuple
 from tensorboardX import SummaryWriter
-from PPO.ac_model import Actor, Critic
+from PPO.ac_model import Actor, Critic, test_net
 
 # 超参数设置
 ACTOR_LR = 1e-4
 CRITIC_LR = 1e-3
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
-ENTROPY_BETA = 0.01
+ENTROPY_BETA = 0.001
 
-EPISODES = 3000  # 收集3000条序列
+EPISODES = 10000  # 收集3000条序列
 MAX_STEP = 193  # 每条序列最多200步
 PPO_EPOCH = 5
 CLIP_EPS = 0.2
 BATCH_SIZE = 32
 
+LOAD_MODEL = False
 ENV_NAME = 'Pendulum-v0'
 env = gym.make(ENV_NAME)
 print("env.action_space: ", env.action_space.shape[0])
@@ -39,7 +41,8 @@ actor_optimizer = optim.Adam(actor.parameters(), lr=ACTOR_LR)
 critic_optimizer = optim.Adam(critic.parameters(), lr=CRITIC_LR)
 
 Memory = namedtuple('Memory', ['s', 'a', 'r', 's_', 'done', 'value', 'adv'])
-
+now = datetime.datetime.now()
+date_time = "{}.{}_{}.{}.{}".format(now.month, now.day, now.hour, now.minute, now.second)
 
 def generalized_advantage_estimation(memories):
     """计算每个time_step对应的泛化优势函数估计，返回新的memories"""
@@ -129,13 +132,14 @@ def ppo(n_episodes, max_step, gamma):
 
                 # 训练actor
                 minib_dist = actor(minib_states)
+                entropy = minib_dist.entropy().mean()
                 new_log_policy = minib_dist.log_prob(minib_action)
                 rt_theta = (new_log_policy - minib_old_log_policy.detach()).exp()
                 # print(rt_theta.size())
                 minib_adv = minib_adv.unsqueeze(-1)
                 surr1 = rt_theta * minib_adv
                 surr2 = minib_adv * torch.clamp(rt_theta, 1-CLIP_EPS, 1+CLIP_EPS)
-                actor_loss = -torch.min(surr1, surr2).mean()
+                actor_loss = -torch.min(surr1, surr2).mean() - ENTROPY_BETA*entropy
 
                 actor_optimizer.zero_grad()
                 actor_loss.backward()
@@ -150,24 +154,37 @@ def ppo(n_episodes, max_step, gamma):
             print('Episode {}\tAverage Score: {:.2f}'.format(i_episode, recent_reward))
         if recent_reward >= -200.0:
             print('Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode - 100, recent_reward))
+            torch.save({'actor': actor.state_dict(),
+                        'critic': critic.state_dict()}, 'model/ppo_checkpoint_'+date_time+'.pth')
             break
 
     return total_rewards
 
 
 
-scores = ppo(EPISODES, MAX_STEP, GAMMA)
-fig = plt.figure()
-ax = fig.add_subplot(111)
-plt.plot(np.arange(1, len(scores)+1), scores)
-plt.ylabel('Score')
-plt.xlabel('Episode #')
+if LOAD_MODEL:
+    checkpoint = torch.load("model/ppo_checkpoint_5.31_15.6.34.pth")
+    actor.load_state_dict(checkpoint['actor'])
+    avg_r, avg_step = test_net(actor, env, count=10)
+    print(avg_r, avg_step)
 
-plt.figure(2)
-plt.title("actor loss")
-plt.plot(ac_losses)
-plt.figure(3)
-plt.title("critic loss")
-plt.plot(cr_losses)
+else:
+    scores = ppo(EPISODES, MAX_STEP, GAMMA)
+    end_time = datetime.datetime.now()
+    time_delta = (end_time-now).seconds/60
+    print("COST: {} mins ".format(time_delta))
 
-plt.show()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.plot(np.arange(1, len(scores)+1), scores)
+    plt.ylabel('Score')
+    plt.xlabel('Episode #')
+
+    plt.figure(2)
+    plt.title("actor loss")
+    plt.plot(ac_losses)
+    plt.figure(3)
+    plt.title("critic loss")
+    plt.plot(cr_losses)
+
+    plt.show()

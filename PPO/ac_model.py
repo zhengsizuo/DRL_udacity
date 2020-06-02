@@ -28,11 +28,6 @@ class Actor(nn.Module):
         m = Normal(mu, std)
         return m
 
-    # def choose_action(self, state_v):
-    #     m = self.forward(state_v)
-    #     action = m.sample().cpu().numpy()
-    #     return action
-
 
 class Critic(nn.Module):
     def __init__(self, obs_size):
