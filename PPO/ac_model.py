@@ -2,7 +2,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.distributions.normal import Normal
 
 HID_SIZE = 128
@@ -20,7 +19,7 @@ class Actor(nn.Module):
             nn.Linear(HID_SIZE, act_size),
             nn.Tanh(),
         )
-        self.logstd = nn.Parameter(torch.zeros(act_size))  # 怎么对该参数进行训练
+        self.logstd = nn.Parameter(torch.zeros(act_size))  # 独立的参数
 
     def forward(self, x):
         mu = self.mu(x)
@@ -45,7 +44,7 @@ class Critic(nn.Module):
         return self.value(x)
 
 
-def test_net(net, env, count=100, device="cpu", render_flag=True):
+def test_net(net, env, action_bound=1, count=10, device="cpu", render_flag=True):
     rewards = 0.0
     steps = 0
     for _ in range(count):
@@ -56,7 +55,7 @@ def test_net(net, env, count=100, device="cpu", render_flag=True):
             state = torch.from_numpy(obs).float().to(device)
             dist = net(state)
             action = dist.sample().cpu().numpy()
-            action = np.clip(action, -2, 2)
+            action = np.clip(action, -action_bound, action_bound)
             obs, reward, done, _ = env.step(action)
 
             rewards += reward
@@ -66,6 +65,7 @@ def test_net(net, env, count=100, device="cpu", render_flag=True):
     return rewards / count, steps / count
 
 
+# 测试网络的参数size是否设置正确，以及随机的
 # import gym
 # env = gym.make('Pendulum-v0')
 # print("env.action_space: ", env.action_space.shape[0])
@@ -74,5 +74,5 @@ def test_net(net, env, count=100, device="cpu", render_flag=True):
 # act_size = env.action_space.shape[0]
 #
 # actor = Actor(obs_size, act_size)
-# avg_r, avg_step = test_net(actor, env)
+# avg_r, avg_step = test_net(actor, env, action_bound=1, count=100, device="cpu", render_flag=False)
 # print(avg_r, avg_step)

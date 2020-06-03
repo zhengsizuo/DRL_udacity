@@ -19,16 +19,17 @@ GAMMA = 0.99
 GAE_LAMBDA = 0.95
 ENTROPY_BETA = 0.001
 
-EPISODES = 5000  # 收集5000条序列
-MAX_STEP = 193  # 每条序列最多193步，减1是batch_size的倍数
-PPO_EPOCH = 5
+EPISODES = 5000  # 收集3000条序列
+MAX_STEP = 2049  # 每条序列最多2049步
+PPO_EPOCH = 10
 CLIP_EPS = 0.2
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 
-REWARD_THRESHOLD = -100
-ACTION_BOUND = 2
+REWARD_THRESHOLD = 240
+ACTION_BOUND = 1
 LOAD_MODEL = True  # 改为True观察已经训练好的agent
-ENV_NAME = 'Pendulum-v0'
+ENV_NAME = 'BipedalWalker-v2'
+
 env = gym.make(ENV_NAME)
 print("env.action_space: ", env.action_space.shape[0])
 print("env.observation_space: ", env.observation_space.shape[0])
@@ -48,7 +49,9 @@ now = datetime.datetime.now()
 date_time = "{}.{}_{}.{}.{}".format(now.month, now.day, now.hour, now.minute, now.second)
 
 if not LOAD_MODEL:
-    writer = SummaryWriter(comment="-ppo_pendulum_" + date_time)
+    writer = SummaryWriter(comment="-ppo_bipedalwalker_" + date_time)
+    # writer.add_graph(actor)
+    # writer.add_graph(critic)
 
 
 def generalized_advantage_estimation(memories):
@@ -59,16 +62,16 @@ def generalized_advantage_estimation(memories):
     rewards = [m.r for m in memories]
     mean_r = np.mean(rewards)
     std_r = np.std(rewards)
-    for t in reversed(range(len(memories)-1)):
+    for t in reversed(range(len(memories) - 1)):
         m = memories[t]
         m_r = (m.r - mean_r) / std_r
         if m.done:
             gae = m_r
         else:
-            td_error = m_r + GAMMA*memories[t+1].value - m.value
-            gae = td_error + GAMMA*GAE_LAMBDA*gae
+            td_error = m_r + GAMMA * memories[t + 1].value - m.value
+            gae = td_error + GAMMA * GAE_LAMBDA * gae
 
-        new_memories.insert(0, Memory(s=m.s, a=m.a, s_=m.s_, r=gae+m.value, done=m.done, value=m.value, adv=gae))
+        new_memories.insert(0, Memory(s=m.s, a=m.a, s_=m.s_, r=gae + m.value, done=m.done, value=m.value, adv=gae))
 
     return new_memories
 
@@ -81,6 +84,7 @@ def old_log_policy_prob(batch, actor, device):
     gaussian_dist = actor(state_v)
 
     return gaussian_dist.log_prob(action_v)
+
 
 
 def ppo(n_episodes, max_step):
@@ -105,7 +109,7 @@ def ppo(n_episodes, max_step):
                 break
             else:
                 memories.append(
-                Memory(s=state, a=action, s_=next_state, r=reward+8/8, done=done, value=value_est, adv=0))
+                    Memory(s=state, a=action, s_=next_state, r=reward, done=done, value=value_est, adv=0))
 
             # 下一个time step
             state = next_state
@@ -114,7 +118,7 @@ def ppo(n_episodes, max_step):
         batch = generalized_advantage_estimation(memories)
         batch_adv = torch.FloatTensor([b.adv for b in batch]).to(device)
         batch_adv = (batch_adv - torch.mean(batch_adv)) / torch.std(batch_adv)
-        # 计算旧策略的log probability
+        # Compute the policy probability with the old policy network
         old_log_policy = old_log_policy_prob(batch, actor, device)  # torch.size([192. 1])
 
         for _ in range(PPO_EPOCH):
@@ -143,7 +147,7 @@ def ppo(n_episodes, max_step):
 
                 minib_adv = minib_adv.unsqueeze(-1)
                 surr1 = rt_theta * minib_adv
-                surr2 = minib_adv * torch.clamp(rt_theta, 1-CLIP_EPS, 1+CLIP_EPS)
+                surr2 = minib_adv * torch.clamp(rt_theta, 1 - CLIP_EPS, 1 + CLIP_EPS)
                 actor_loss = -torch.min(surr1, surr2).mean() - ENTROPY_BETA*entropy
 
                 actor_optimizer.zero_grad()
@@ -165,16 +169,14 @@ def ppo(n_episodes, max_step):
         if recent_reward >= REWARD_THRESHOLD:
             print('Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode - 100, recent_reward))
             torch.save({'actor': actor.state_dict(),
-                        'critic': critic.state_dict()}, 'model/ppo_pendulum_checkpoint_'+date_time+'.pth')
+                        'critic': critic.state_dict()}, 'model/ppo_bipedalwalker_checkpoint_' + date_time + '.pth')
             break
 
-    writer.close()
     return total_rewards
 
 
-
 if LOAD_MODEL:
-    checkpoint = torch.load("model/ppo_pendulum_checkpoint_6.3_16.18.32.pth")
+    checkpoint = torch.load("model/ppo_bipedalwalker_checkpoint_6.3_12.47.49.pth")
     actor.load_state_dict(checkpoint['actor'])
     avg_r, avg_step = test_net(actor, env, action_bound=ACTION_BOUND, count=10)
     print("Average rewards:", avg_r, "   Average steps:", avg_step)
@@ -182,20 +184,13 @@ if LOAD_MODEL:
 else:
     scores = ppo(EPISODES, MAX_STEP)
     end_time = datetime.datetime.now()
-    time_delta = (end_time-now).seconds/60
+    time_delta = (end_time - now).seconds / 60
     print("COST: {} mins ".format(time_delta))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(np.arange(1, len(scores)+1), scores)
+    plt.plot(np.arange(1, len(scores) + 1), scores)
     plt.ylabel('Score')
     plt.xlabel('Episode')
-
-    # plt.figure(2)
-    # plt.title("actor loss")
-    # plt.plot(ac_losses)
-    # plt.figure(3)
-    # plt.title("critic loss")
-    # plt.plot(cr_losses)
 
     plt.show()
