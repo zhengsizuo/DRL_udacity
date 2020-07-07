@@ -21,6 +21,6 @@
 Test rewards of intelligent agent in ten episodes:
 > Test rewards are: 200.0 200.0 200.0 200.0 200.0 200.0 200.0 200.0 200.0 200.0  
 
-![best](result/cartpole.gif) <br />
+![best](results/cartpole.gif) <br />
 
 
