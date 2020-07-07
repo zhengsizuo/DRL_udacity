@@ -10,7 +10,7 @@
 <table>
     <tr>
         <td ><center><img src="figures/pen_scores.png" width="400">Fig.1 pendulum rewards</center></td>
-        <td ><center><img src="figures/bipedal_scores.png"  width="400">Fig.2 PG with baseline</center></td>
+        <td ><center><img src="figures/bipedal_scores.png"  width="400">Fig.2 bipedal rewards</center></td>
     </tr>
 </table>
 
